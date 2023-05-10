@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 type UserBasic struct {
 	gorm.Model
-	Name          string
+	Name          string ``
 	PassWord      string
 	Phone         string
 	Email         string
@@ -18,6 +18,11 @@ type UserBasic struct {
 	DeviceInfo    string
 }
 
-func (tabke *UserBasic) TableName() string {
+func (table *UserBasic) TableName() string {
 	return "user_basic"
+}
+
+func SaveUser(user *UserBasic) {
+	//	数据库连接
+	DB.Create(user)
 }

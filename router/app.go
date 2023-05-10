@@ -2,6 +2,7 @@ package router
 
 import (
 	"ginchat/service"
+	"ginchat/sql"
 	"github.com/gin-gonic/gin"
 	"log"
 )
@@ -17,6 +18,7 @@ func Router() *gin.Engine {
 	return r
 }
 
-func InitRouter() {
-
+// 初始化路由
+func InitRouter(r *gin.Engine) {
+	sql.RegisterRouter(r)
 }
