@@ -1,7 +1,9 @@
 package models
 
 import (
+	"context"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"time"
 )
@@ -104,4 +106,85 @@ func FindGoods() {
 	//if err != nil {
 	//	log.Println("err:", err)
 	//}
+}
+
+func SessionContext() {
+	db := GetDB()
+	timeoutCtx, _ := context.WithTimeout(context.Background(), time.Nanosecond)
+	tx := db.Session(&gorm.Session{Context: timeoutCtx})
+	var user UserBasic
+	tx.First(&user) // 带有 context timeoutCtx 的查询操作
+	go handler(timeoutCtx)
+
+	tx.Model(&user).Update("role", "admin") // 带有 context timeoutCtx 的更新操作
+}
+
+func handler(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+		fmt.Println("超时了")
+		return
+	default:
+		fmt.Println("default")
+	}
+}
+
+func Transcation() {
+	db := GetDB().Session(&gorm.Session{})
+	//1.自动事务
+	//err := db.Transaction(func(tx *gorm.DB) error {
+	//	//
+	//	goods := Goods{
+	//		Title:      "苹果2",
+	//		Price:      30,
+	//		Stock:      50,
+	//		Type:       1,
+	//		CreateTime: time.Now(),
+	//	}
+	//	if err := tx.Create(&goods).Error; err != nil {
+	//		return err
+	//	}
+	//	goods1 := Goods{
+	//		Title:      "苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2",
+	//		Price:      99999999999999999,
+	//		Stock:      50,
+	//		Type:       1,
+	//		CreateTime: time.Now(),
+	//	}
+	//	if err := tx.Create(&goods1).Error; err != nil {
+	//		return err
+	//	}
+	//
+	//	return nil
+	//})
+	//log.Println("事务：", err)
+
+	//2.手动事务
+	tx := db.Begin()
+	goods := Goods{
+		Title:      "苹果2",
+		Price:      30,
+		Stock:      50,
+		Type:       1,
+		CreateTime: time.Now(),
+	}
+	if err := tx.Create(&goods).Error; err != nil {
+		tx.Rollback()
+		return
+	}
+
+	goods2 := Goods{
+		Title:      "苹果2",
+		Price:      99999999999999999,
+		Stock:      50,
+		Type:       1,
+		CreateTime: time.Now(),
+	}
+	if err := tx.Create(&goods2).Error; err != nil {
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+
 }

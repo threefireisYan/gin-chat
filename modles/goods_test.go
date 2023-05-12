@@ -28,3 +28,11 @@ func TestDeleteGoods(t *testing.T) {
 func TestFindGoods(t *testing.T) {
 	FindGoods()
 }
+
+func TestSessionContext(t *testing.T) {
+	SessionContext()
+}
+
+func TestTranscation(t *testing.T) {
+	Transcation()
+}
