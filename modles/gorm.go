@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-var DB *gorm.DB
+var _db *gorm.DB
 
 func init() {
 
@@ -19,12 +19,22 @@ func init() {
 	port := "3306"       //数据库端口号
 	Dbname := "ginchat"  // 数据库名   "root:123456@tcp(127.0.0.1:3306)/ginchat?charset=utf8mb4&parseTime=True&loc=Local"
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", userName, passWord, host, port, Dbname)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+	var err error
+	_db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		log.Fatalln("数据库连接失败！", err)
 	}
-	DB = db
+	db, err := _db.DB()
+	if err != nil {
+		log.Fatalln("数据库连接失败！", err)
+	}
+	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(20)
 
+}
+
+func GetDB() *gorm.DB {
+	return _db
 }
