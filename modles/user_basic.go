@@ -74,7 +74,7 @@ func SaveUser(user *UserBasic) {
 	fmt.Println("受影响行数：", affected)
 	err := result.Error
 	if err != nil {
-		log.Printf("insert user error :", err)
+		log.Println("insert user error :", err)
 	}
 }
 
@@ -84,7 +84,7 @@ func GetUserId(id int64) UserBasic {
 	//	调用import "gorm.io/gorm"会自动使用已经在gorm.go里面的init函数，
 	err := GetDB().Where("id = ?", id).First(&user).Error
 	if err != nil {
-		log.Printf("query user error :", err)
+		log.Println("query user error :", err)
 	}
 	return user
 }
@@ -94,7 +94,7 @@ func GetAllUsers() []UserBasic {
 
 	err := GetDB().Find(&user).Error
 	if err != nil {
-		log.Printf("query user error :", err)
+		log.Println("query user error :", err)
 	}
 	return user
 }
@@ -102,7 +102,7 @@ func GetAllUsers() []UserBasic {
 func UpdateUser(id int64) {
 	err := GetDB().Model(&UserBasic{}).Where("id = ?", id).Update("name", "lisi").Error
 	if err != nil {
-		log.Printf("update user error :", err)
+		log.Println("update user error :", err)
 	}
 }
 
@@ -111,6 +111,6 @@ func DeleteUser(id int64) {
 	err := GetDB().Unscoped().Model(&UserBasic{}).Where("id = ?", id).Delete(&UserBasic{}).Error
 	//err := DB.Model(&UserBasic{}).Where("id = ?", id).Delete(&UserBasic{}).Error
 	if err != nil {
-		log.Printf("update user error :", err)
+		log.Println("update user error :", err)
 	}
 }
