@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 	"log"
 )
@@ -46,10 +47,32 @@ func (table *UserBasic) TableName() string {
 
 // 新增数据
 func SaveUser(user *UserBasic) {
-	//如果使用动态指定数据库表名
+	//	1.如果使用动态指定数据库表名
 	//err := DB.Scopes(UserTable(user)).Create(&user).Error
-	//	调用import "gorm.io/gorm"会自动使用已经在gorm.go里面的init函数，
-	err := GetDB().Create(user).Error
+	//	2.调用import "gorm.io/gorm"会自动使用已经在gorm.go里面的init函数，
+	//result := GetDB().Create(user)
+	//	3.可以选择仅插入某些字段
+	//result := GetDB().Select("name", "pass_word").Create(user)
+	//	4.可以忽略插入某些字段
+	//result := GetDB().Omit("author_name", "author_name", "author_email").Create(user)
+	//	5.批量插入数据
+	////var users = []UserBasic{{Name: "张三"}, {Name: "李四"}}
+	//result := GetDB().Omit("author_name", "author_name", "author_email").Create(users)
+	//	6.批量-分批插入数据
+	////var users = []UserBasic{{Name: "张三"}, {Name: "李四"}}
+	//result := GetDB().Omit("author_name", "author_name", "author_email").CreateInBatches(users,2)
+	//	7.对密码加密，需要使用map形式进行插入数据
+	//result := GetDB().Model(&UserBasic{}).Omit("author_name", "author_name", "author_email").Create(map[string]interface{}{
+	//	"name":      "王五",
+	//	"pass_word": clause.Expr{SQL: "md5(?)", Vars: []interface{}{"123456"}},
+	//})
+	//	8.使用原生的sql语句
+	//GetDB().Exec("insert into user_basic (name,pass_word) values (?,?)","王五","123456")
+
+	result := GetDB().Omit("author_name", "author_name", "author_email").Create(user)
+	affected := result.RowsAffected
+	fmt.Println("受影响行数：", affected)
+	err := result.Error
 	if err != nil {
 		log.Printf("insert user error :", err)
 	}
