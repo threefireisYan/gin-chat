@@ -30,6 +30,7 @@ func init() {
 	if err != nil {
 		log.Fatalln("数据库连接失败！", err)
 	}
+	//数据库连接配置 最大连接数等
 	db.SetMaxOpenConns(100)
 	db.SetMaxIdleConns(20)
 

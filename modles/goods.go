@@ -21,6 +21,56 @@ func (Goods) TableName() string {
 	return "goods"
 }
 
+func (g Goods) BeforeCreate(tx *gorm.DB) error {
+	log.Println("Before create....")
+	return nil
+}
+
+func (g Goods) AfterCreate(tx *gorm.DB) error {
+	log.Println("After Save....")
+	return nil
+}
+
+func (g Goods) BeforeSave(tx *gorm.DB) error {
+	log.Println("Before Save....")
+
+	return nil
+}
+
+func (g Goods) AfterSave(tx *gorm.DB) error {
+	log.Println("After create....")
+	return nil
+}
+
+func (g Goods) BeforeUpdate(tx *gorm.DB) error {
+	log.Println("Before Update....")
+
+	return nil
+}
+
+func (g Goods) AfterUpdate(tx *gorm.DB) error {
+	log.Println("After Update....")
+	return nil
+}
+
+func (g Goods) BeforeDelete(tx *gorm.DB) error {
+	log.Println("Before Delete....")
+
+	return nil
+}
+
+func (g Goods) AfterDelete(tx *gorm.DB) error {
+	log.Println("After Delete....")
+	return nil
+}
+
+func (g Goods) AfterFind(tx *gorm.DB) error {
+	//如果查询find/take的时候有多条记录就会触发多少次AfterFind，如果没有查询到数据则不会触发AfterFind
+	//使用原生sql不会触发AfterFind 原因：因为hook定义的是Goods结构体，使用原生sql的时候一般会自定义另一个结构体来接受查询返回值，所以无法触发
+	log.Println("After Find....")
+	return nil
+}
+
 func SvaeGoods(goods Goods) {
 	GetDB().Create(&goods)
 }
@@ -93,13 +143,13 @@ func FindGoods() {
 	var results []Result
 
 	////等价于: SELECT type, count(*) as  total FROM `goods` GROUP BY type HAVING (total > 0)
-	//db.Model(Goods{}).Select("type, count(*) as  total").Group("type").Having("total > 0").Scan(&results)
+	db.Model(Goods{}).Select("type, count(*) as  total").Group("type").Having("total > 0").Scan(&results)
 
 	//scan类似Find都是用于执行查询语句，然后把查询结果赋值给结构体变量，区别在于scan不会从传递进来的结构体变量提取表名.
 	//这里因为我们重新定义了一个结构体用于保存结果，但是这个结构体并没有绑定goods表，所以这里只能使用scan查询函数。
 	//	9.直接运行sql语句 (不要做可变参数的拼接，防止sql注入，尽量使用如下的参数化查询)
-	sql := "SELECT type, count(*) as  total FROM `goods` where id > ? GROUP BY type HAVING (total > 0) "
-	db.Raw(sql, "1").Scan(&results)
+	//sql := "SELECT type, count(*) as  total FROM `goods` where id > ? GROUP BY type HAVING (total > 0) "
+	//db.Raw(sql, "1").Scan(&results)
 
 	fmt.Println(results)
 	//
@@ -108,6 +158,7 @@ func FindGoods() {
 	//}
 }
 
+// 会话查询超时样例
 func SessionContext() {
 	db := GetDB()
 	timeoutCtx, _ := context.WithTimeout(context.Background(), time.Nanosecond)
@@ -159,12 +210,12 @@ func Transcation() {
 	//})
 	//log.Println("事务：", err)
 
-	//2.手动事务
+	//2.手动事务 与 保存点
 	tx := db.Begin()
 	goods := Goods{
-		Title:      "苹果2",
+		Title:      "苹果1",
 		Price:      30,
-		Stock:      50,
+		Stock:      500,
 		Type:       1,
 		CreateTime: time.Now(),
 	}
@@ -172,10 +223,10 @@ func Transcation() {
 		tx.Rollback()
 		return
 	}
-
+	tx.SavePoint("point1") // 保存点
 	goods2 := Goods{
 		Title:      "苹果2",
-		Price:      99999999999999999,
+		Price:      999,
 		Stock:      50,
 		Type:       1,
 		CreateTime: time.Now(),
@@ -184,7 +235,36 @@ func Transcation() {
 		tx.Rollback()
 		return
 	}
-
+	tx.RollbackTo("point1") //回滚至保存点
 	tx.Commit()
+
+	////	3.嵌套事务
+	//db.Transaction(func(tx *gorm.DB) error {
+	//	goods := Goods{
+	//		Title:      "苹果2",
+	//		Price:      30,
+	//		Stock:      50,
+	//		Type:       1,
+	//		CreateTime: time.Now(),
+	//	}
+	//	err := tx.Create(&goods).Error
+	//	if err != nil {
+	//		log.Println("err:", err)
+	//	}
+	//	tx.Transaction(func(tx *gorm.DB) error {
+	//		goods1 := Goods{
+	//			Title:      "苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2苹果2",
+	//			Price:      99999999999999999,
+	//			Stock:      50,
+	//			Type:       1,
+	//			CreateTime: time.Now(),
+	//		}
+	//		if err := tx.Create(&goods1).Error; err != nil {
+	//			return err
+	//		}
+	//		return nil
+	//	})
+	//	return nil
+	//})
 
 }
