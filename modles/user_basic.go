@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"gorm.io/gorm"
 	"log"
 )
@@ -20,8 +19,9 @@ type UserBasic struct {
 	LogOutTime    uint64
 	IsLogout      bool
 	DeviceInfo    string
-	Admin         bool   `gorm:"-"`                               //这里是不存在于数据库的字段，使用-进行忽略数据库操作
-	Author        Author `gorm:"embedded;embeddedPrefix:author_"` //这里是引入嵌套结构体embedded，并设置了前缀embeddedPrefix:author_
+	Admin         bool `gorm:"-"` //这里是不存在于数据库的字段，使用-进行忽略数据库操作
+	//Author        Author `gorm:"embedded;embeddedPrefix:author_"` //这里是引入嵌套结构体embedded，并设置了前缀embeddedPrefix:author_
+	UserProfile UserProfile `gorm:"foreignKey:user_basic_id"`
 }
 
 type Author struct {
@@ -29,21 +29,31 @@ type Author struct {
 	Email string
 }
 
+type UserProfile struct {
+	ID          int64
+	UserBasicId int64
+	Sex         int
+	Age         int
+}
+
+func (u UserProfile) TableName() string {
+	return "user_profiles"
+}
+
 // 这里指明操作表名（重写了gorm中的TableName方法，如果不做重写那么将自动使用UserBasic的表）
 func (table *UserBasic) TableName() string {
 	return "user_basic"
 }
 
-//
-//func UserTable(user UserBasic) func(tx *gorm.DB) *gorm.DB {
-//	return func(tx *gorm.DB) *gorm.DB {
-//		if user.Admin {
-//			return tx.Table("admin_users")
-//		}
-//
-//		return tx.Table("users")
-//	}
-//}
+func UserTable(user UserBasic) func(tx *gorm.DB) *gorm.DB {
+	return func(tx *gorm.DB) *gorm.DB {
+		if user.Admin {
+			return tx.Table("admin_users")
+		}
+
+		return tx.Table("users")
+	}
+}
 
 // 新增数据
 func SaveUser(user *UserBasic) {
@@ -68,24 +78,51 @@ func SaveUser(user *UserBasic) {
 	//})
 	//	8.使用原生的sql语句
 	//GetDB().Exec("insert into user_basic (name,pass_word) values (?,?)","王五","123456")
+	//
+	//result := GetDB().Omit("author_name", "author_name", "author_email").Create(user)
+	//affected := result.RowsAffected
+	//fmt.Println("受影响行数：", affected)
+	//err := result.Error
+	//if err != nil {
+	//	log.Println("insert user error :", err)
+	//}
 
-	result := GetDB().Omit("author_name", "author_name", "author_email").Create(user)
-	affected := result.RowsAffected
-	fmt.Println("受影响行数：", affected)
-	err := result.Error
-	if err != nil {
-		log.Println("insert user error :", err)
+	//9.关联表单做新增
+	db := GetDB().Session(&gorm.Session{})
+	saveUser := UserBasic{
+		Name:     "111",
+		PassWord: "111",
+		UserProfile: UserProfile{
+			Sex: 0,
+			Age: 20,
+		},
 	}
+	db.Create(&saveUser)
+
 }
 
 // 查询数据
 func GetUserId(id int64) UserBasic {
 	var user UserBasic
 	//	调用import "gorm.io/gorm"会自动使用已经在gorm.go里面的init函数，
-	err := GetDB().Where("id = ?", id).First(&user).Error
-	if err != nil {
-		log.Println("query user error :", err)
-	}
+	//err := GetDB().Where("id = ?", id).First(&user).Error
+	//if err != nil {
+	//	log.Println("query user error :", err)
+	//}
+	//1.预加载的是结构体名称
+	//err := GetDB().Preload("UserProfile").Where("id = ?", id).First(&user).Error
+	//if err != nil {
+	//	log.Println("query user error :", err)
+	//}
+	//2.进行左连接
+	//GetDB().Joins("UserProfile").First(&user)
+	//3.进行查询关联表单
+	db := GetDB().Session(&gorm.Session{})
+	//var user UserBasic
+	db.Model(&UserBasic{}).Where("id=?", 12).Take(&user)
+	var userProfile UserProfile
+	db.Model(&user).Association("UserProfile").Find(&userProfile)
+
 	return user
 }
 
