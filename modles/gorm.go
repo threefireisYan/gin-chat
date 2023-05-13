@@ -39,3 +39,12 @@ func init() {
 func GetDB() *gorm.DB {
 	return _db
 }
+
+// Scope的自定义通用函数-分页
+func Pageinate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		//	limit pageSize offse (page -1)*pageSize
+		offset := (page - 1) * pageSize
+		return db.Limit(pageSize).Offset(offset)
+	}
+}

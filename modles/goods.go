@@ -156,6 +156,17 @@ func FindGoods() {
 	//if err != nil {
 	//	log.Println("err:", err)
 	//}
+
+	//	10.子查询
+	db.Model(&Goods{}).Where("Price > (?)", db.Table("goods").Select("COUNT(title)")).Find(&Goods{})
+	//SELECT * FROM `goods` WHERE Price > (SELECT COUNT(title) FROM `goods`)
+	subQuery1 := db.Model(&UserBasic{}).Select("name", "deleted_at", "pass_word")
+	subQuery2 := db.Model(&Goods{}).Select("title")
+	db.Table("(?) as u, (?) as p", subQuery1, subQuery2).Find(&UserBasic{})
+	//SELECT * FROM (SELECT `name`,`deleted_at`,`pass_word` FROM `user_basic` WHERE `user_basic`.`deleted_at` IS NULL) as u, (SELECT `title` FROM `goods`) as p WHERE `u`.`deleted_at` IS NULL
+	db.Table("(?) as u", db.Model(&UserBasic{}).Select("name", "pass_word", "deleted_at")).Where("pass_word = ?", 13222222222).Find(&UserBasic{})
+	//SELECT * FROM (SELECT `name`,`pass_word`,`deleted_at` FROM `user_basic` WHERE `user_basic`.`deleted_at` IS NULL) as u WHERE pass_word = 13222222222 AND `u`.`deleted_at` IS NULL
+
 }
 
 // 会话查询超时样例
@@ -266,5 +277,15 @@ func Transcation() {
 	//	})
 	//	return nil
 	//})
+
+}
+
+func FindUserAndGoods() {
+	db := GetDB().Session(&gorm.Session{})
+
+	var users []UserBasic
+	db.Scopes(Pageinate(1, 3)).Find(&users)
+	var goods []Goods
+	db.Scopes(Pageinate(1, 3)).Find(&goods)
 
 }

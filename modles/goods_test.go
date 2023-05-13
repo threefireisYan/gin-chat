@@ -36,3 +36,7 @@ func TestSessionContext(t *testing.T) {
 func TestTranscation(t *testing.T) {
 	Transcation()
 }
+
+func TestFindUserAndGoods(t *testing.T) {
+	FindUserAndGoods()
+}
